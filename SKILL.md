@@ -81,6 +81,21 @@ node solo.js event add \
 # Returns: {"id": "evt_xxx"}
 ```
 
+### Deleting Facts (Soft Delete)
+
+```bash
+# Delete customer (cascades to persons and events)
+node solo.js customer delete cust_xxx
+
+# Delete person
+node solo.js person delete pers_xxx
+
+# Delete event
+node solo.js event delete evt_xxx
+```
+
+**Note**: Deleted records are hidden from queries but preserved in database for audit.
+
 ### Querying Facts
 
 ```bash

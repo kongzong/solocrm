@@ -225,4 +225,44 @@ describe('Database', () => {
       expect(eventWithoutPerson).toBeDefined();
     });
   });
+
+  describe('Soft Delete', () => {
+    test('should soft delete customer', () => {
+      const customer = db.customerEnsure('待删除客户');
+      const result = db.customerDelete(customer.id);
+      
+      expect(result.deleted_at).toBeDefined();
+      expect(db.customerGet(customer.id)).toBeNull();
+      expect(db.customerList().find(c => c.id === customer.id)).toBeUndefined();
+    });
+
+    test('should soft delete person', () => {
+      const customer = db.customerEnsure('测试客户');
+      const person = db.personEnsure(customer.id, '待删除联系人');
+      
+      const result = db.personDelete(person.id);
+      expect(result.deleted_at).toBeDefined();
+      expect(db.personList(customer.id).find(p => p.id === person.id)).toBeUndefined();
+    });
+
+    test('should soft delete event', () => {
+      const customer = db.customerEnsure('测试客户');
+      const event = db.eventAdd({ customerId: customer.id, content: '待删除事件' });
+      
+      const result = db.eventDelete(event.id);
+      expect(result.deleted_at).toBeDefined();
+      expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeUndefined();
+    });
+
+    test('should cascade delete customer to persons and events', () => {
+      const customer = db.customerEnsure('级联删除测试');
+      const person = db.personEnsure(customer.id, '联系人');
+      const event = db.eventAdd({ customerId: customer.id, personId: person.id, content: '事件' });
+      
+      db.customerDelete(customer.id);
+      
+      expect(db.personList(customer.id).find(p => p.id === person.id)).toBeUndefined();
+      expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeUndefined();
+    });
+  });
 });

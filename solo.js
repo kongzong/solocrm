@@ -97,6 +97,19 @@ customerCmd
     }
   });
 
+customerCmd
+  .command('delete <id>')
+  .description('Soft delete customer (and related persons/events)')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.customerDelete(id);
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
 // Person commands
 const personCmd = program
   .command('person')
@@ -130,6 +143,19 @@ personCmd
     try {
       const persons = db.personList(opts.customer);
       console.log(JSON.stringify(persons, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
+personCmd
+  .command('delete <id>')
+  .description('Soft delete person')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.personDelete(id);
+      console.log(JSON.stringify(result, null, 2));
     } finally {
       db.close();
     }
@@ -181,6 +207,19 @@ eventCmd
     try {
       const events = db.eventList(opts.customer, opts.limit);
       console.log(JSON.stringify(events, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
+eventCmd
+  .command('delete <id>')
+  .description('Soft delete event')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.eventDelete(id);
+      console.log(JSON.stringify(result, null, 2));
     } finally {
       db.close();
     }

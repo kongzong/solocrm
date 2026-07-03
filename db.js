@@ -20,6 +20,7 @@ class DB {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted_at DATETIME,
         meta JSON
       );
 
@@ -30,6 +31,7 @@ class DB {
         phone TEXT,
         email TEXT,
         title TEXT,
+        deleted_at DATETIME,
         FOREIGN KEY (customer_id) REFERENCES customer(id)
       );
 
@@ -44,6 +46,7 @@ class DB {
         currency TEXT DEFAULT 'CNY',
         occurred_at DATETIME,
         recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted_at DATETIME,
         meta JSON,
         FOREIGN KEY (customer_id) REFERENCES customer(id),
         FOREIGN KEY (person_id) REFERENCES person(id)
@@ -59,7 +62,7 @@ class DB {
 
   customerEnsure(name) {
     const existing = this.db.prepare(
-      'SELECT id, name, created_at, meta FROM customer WHERE name = ?'
+      'SELECT id, name, created_at, meta FROM customer WHERE name = ? AND deleted_at IS NULL'
     ).get(name);
 
     if (existing) {
@@ -78,22 +81,31 @@ class DB {
 
   customerGet(id) {
     const row = this.db.prepare(
-      'SELECT id, name, created_at, meta FROM customer WHERE id = ?'
+      'SELECT id, name, created_at, meta FROM customer WHERE id = ? AND deleted_at IS NULL'
     ).get(id);
     return row || null;
   }
 
   customerList() {
     return this.db.prepare(
-      'SELECT id, name, created_at, meta FROM customer ORDER BY created_at DESC'
+      'SELECT id, name, created_at, meta FROM customer WHERE deleted_at IS NULL ORDER BY created_at DESC'
     ).all();
+  }
+
+  customerDelete(id) {
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE customer SET deleted_at = ? WHERE id = ?').run(now, id);
+    // Also soft delete related persons and events
+    this.db.prepare('UPDATE person SET deleted_at = ? WHERE customer_id = ?').run(now, id);
+    this.db.prepare('UPDATE event SET deleted_at = ? WHERE customer_id = ?').run(now, id);
+    return { id, deleted_at: now };
   }
 
   // Person operations
 
   personEnsure(customerId, name, phone = null, email = null, title = null) {
     const existing = this.db.prepare(
-      'SELECT id, customer_id, name, phone, email, title FROM person WHERE customer_id = ? AND name = ?'
+      'SELECT id, customer_id, name, phone, email, title FROM person WHERE customer_id = ? AND name = ? AND deleted_at IS NULL'
     ).get(customerId, name);
 
     if (existing) {
@@ -111,8 +123,16 @@ class DB {
 
   personList(customerId) {
     return this.db.prepare(
-      'SELECT id, customer_id, name, phone, email, title FROM person WHERE customer_id = ? ORDER BY name'
+      'SELECT id, customer_id, name, phone, email, title FROM person WHERE customer_id = ? AND deleted_at IS NULL ORDER BY name'
     ).all(customerId);
+  }
+
+  personDelete(id) {
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE person SET deleted_at = ? WHERE id = ?').run(now, id);
+    // Also soft delete related events
+    this.db.prepare('UPDATE event SET person_id = NULL, deleted_at = ? WHERE person_id = ?').run(now, id);
+    return { id, deleted_at: now };
   }
 
   // Event operations
@@ -152,8 +172,14 @@ class DB {
 
   eventList(customerId, limit = 50) {
     return this.db.prepare(
-      'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? ORDER BY occurred_at DESC LIMIT ?'
+      'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? AND deleted_at IS NULL ORDER BY occurred_at DESC LIMIT ?'
     ).all(customerId, limit);
+  }
+
+  eventDelete(id) {
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE event SET deleted_at = ? WHERE id = ?').run(now, id);
+    return { id, deleted_at: now };
   }
 
   // Timeline
@@ -168,9 +194,9 @@ class DB {
         c.name as customer_name,
         p.name as person_name
       FROM event e
-      JOIN customer c ON e.customer_id = c.id
-      LEFT JOIN person p ON e.person_id = p.id
-      WHERE e.customer_id = ? AND e.occurred_at >= ?
+      JOIN customer c ON e.customer_id = c.id AND c.deleted_at IS NULL
+      LEFT JOIN person p ON e.person_id = p.id AND p.deleted_at IS NULL
+      WHERE e.customer_id = ? AND e.occurred_at >= ? AND e.deleted_at IS NULL
       ORDER BY e.occurred_at DESC
     `).all(customerId, cutoff);
   }
@@ -179,12 +205,12 @@ class DB {
 
   customerListAll() {
     return this.db.prepare(
-      'SELECT id, name, created_at, meta FROM customer ORDER BY created_at'
+      'SELECT id, name, created_at, meta FROM customer WHERE deleted_at IS NULL ORDER BY created_at'
     ).all();
   }
 
   eventListAll(options = {}) {
-    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event';
+    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE deleted_at IS NULL';
     const conditions = [];
     const params = [];
 
@@ -226,8 +252,9 @@ class DB {
         c.name as customer_name,
         p.name as person_name
       FROM event e
-      JOIN customer c ON e.customer_id = c.id
-      LEFT JOIN person p ON e.person_id = p.id
+      JOIN customer c ON e.customer_id = c.id AND c.deleted_at IS NULL
+      LEFT JOIN person p ON e.person_id = p.id AND p.deleted_at IS NULL
+      WHERE e.deleted_at IS NULL
     `;
     const conditions = [];
     const params = [];
@@ -249,7 +276,7 @@ class DB {
     }
 
     if (conditions.length > 0) {
-      sql += ' WHERE ' + conditions.join(' AND ');
+      sql += ' AND ' + conditions.join(' AND ');
     }
 
     sql += ' ORDER BY e.occurred_at DESC';
@@ -265,8 +292,8 @@ class DB {
   backupAll() {
     return {
       customers: this.customerListAll(),
-      persons: this.db.prepare('SELECT * FROM person ORDER BY customer_id, name').all(),
-      events: this.db.prepare('SELECT * FROM event ORDER BY occurred_at').all(),
+      persons: this.db.prepare('SELECT * FROM person WHERE deleted_at IS NULL ORDER BY customer_id, name').all(),
+      events: this.db.prepare('SELECT * FROM event WHERE deleted_at IS NULL ORDER BY occurred_at').all(),
       exported_at: new Date().toISOString()
     };
   }
