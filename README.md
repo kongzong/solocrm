@@ -7,18 +7,20 @@ AI Agent business fact kernel for recording and querying structured business fac
 If user asks you to install this skill, execute these steps:
 
 ```bash
-# Step 1: Clone to skills directory
-git clone https://github.com/your-username/solocrm.git ~/.agents/skills/solocrm
+# Step 1: Clone to your skills directory
+# Claude: ~/.claude/skills/
+# opencode: ~/.agents/skills/
+git clone https://github.com/kongzong/solocrm.git <your-skills-dir>/solocrm
 
 # Step 2: Install dependencies
-cd ~/.agents/skills/solocrm
+cd <your-skills-dir>/solocrm
 npm install
 
 # Step 3: Verify
 node solo.js --version
 ```
 
-After installation, read `~/.agents/skills/solocrm/SKILL.md` to learn how to use this skill.
+After installation, read the SKILL.md in the installed directory to learn how to use this skill.
 
 ## For Human
 
