@@ -621,4 +621,47 @@ exportCmd
     }
   });
 
+// Import commands
+program
+  .command('import')
+  .alias('i')
+  .description('Import data from file')
+  .argument('<file>', 'JSON file to import (from export backup)')
+  .action((file) => {
+    const db = getDb();
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Resolve file path
+      const filePath = path.resolve(file);
+      if (!fs.existsSync(filePath)) {
+        console.error(JSON.stringify({ error: `File not found: ${filePath}` }));
+        process.exit(1);
+      }
+
+      // Read and parse file
+      const content = fs.readFileSync(filePath, 'utf-8');
+      let data;
+      try {
+        data = JSON.parse(content);
+      } catch (e) {
+        console.error(JSON.stringify({ error: 'Invalid JSON file' }));
+        process.exit(1);
+      }
+
+      // Check if it's a backup format
+      if (!data.customers && !data.persons && !data.events) {
+        console.error(JSON.stringify({ error: 'Invalid backup format. Expected customers, persons, or events.' }));
+        process.exit(1);
+      }
+
+      // Import
+      const results = db.importBackup(data);
+      console.log(JSON.stringify(results, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
 program.parse();

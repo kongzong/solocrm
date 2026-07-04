@@ -168,6 +168,24 @@ node solo.js export events --channel meeting --format csv
 node solo.js export events --customer cust_xxx --channel meeting --range 7d --format csv
 ```
 
+### Import Commands
+
+```bash
+# Import from backup file (for data merging between users)
+node solo.js import <file.json>
+
+# Workflow: User A exports, User B imports
+# User A:
+node solo.js export backup --format json > a_data.json
+# User B:
+node solo.js import a_data.json
+```
+
+**Import Behavior:**
+- Customers: idempotent by name (existing customers skipped)
+- Persons: idempotent by customer+name (existing contacts skipped)
+- Events: always creates new (events are timestamped records)
+
 ## Extraction Rules
 
 When parsing user input, extract:

@@ -153,6 +153,25 @@ solo export persons --customer <id> --format json
 solo export backup --format json|ndjson
 ```
 
+### Import Commands
+
+```bash
+# Import from backup file
+solo import <file.json>
+
+# Example workflow for merging data between users
+# User A exports
+solo export backup --format json > a_data.json
+
+# User B imports
+solo import a_data.json
+```
+
+**Import Rules:**
+- Customers: idempotent by name (won't duplicate)
+- Persons: idempotent by customer+name (won't duplicate)
+- Events: always creates new (events are timestamped records)
+
 ### Export Formats
 
 | Format | Use Case | Excel Compatible |

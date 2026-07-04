@@ -425,4 +425,71 @@ describe('Database', () => {
       expect(results.length).toBe(0);
     });
   });
+
+  describe('Import', () => {
+    test('should import backup data', () => {
+      const backupData = {
+        customers: [
+          { id: 'cust_old001', name: '导入客户A', created_at: '2024-01-01T00:00:00Z' },
+          { id: 'cust_old002', name: '导入客户B', created_at: '2024-01-02T00:00:00Z' }
+        ],
+        persons: [
+          { id: 'pers_old001', customer_id: 'cust_old001', name: '联系人1', phone: '13800000001' }
+        ],
+        events: [
+          { id: 'evt_old001', customer_id: 'cust_old001', person_id: 'pers_old001', channel: 'meeting', content: '导入事件', occurred_at: '2024-06-01T10:00:00Z' }
+        ]
+      };
+
+      const results = db.importBackup(backupData);
+      expect(results.customers.imported).toBe(2);
+      expect(results.persons.imported).toBe(1);
+      expect(results.events.imported).toBe(1);
+    });
+
+    test('should not duplicate customers with same name', () => {
+      // First import
+      db.importBackup({
+        customers: [{ id: 'cust_001', name: '唯一客户' }],
+        persons: [],
+        events: []
+      });
+
+      // Second import - should skip
+      const results = db.importBackup({
+        customers: [{ id: 'cust_002', name: '唯一客户' }],
+        persons: [],
+        events: []
+      });
+
+      expect(results.customers.imported).toBe(0);
+      expect(results.customers.skipped).toBe(1);
+    });
+
+    test('should always create new events', () => {
+      const backupData = {
+        customers: [{ id: 'cust_001', name: '事件测试客户' }],
+        persons: [],
+        events: [
+          { id: 'evt_001', customer_id: 'cust_001', channel: 'test', content: '事件1', occurred_at: '2024-01-01T00:00:00Z' }
+        ]
+      };
+
+      // Import twice
+      db.importBackup(backupData);
+      const results = db.importBackup(backupData);
+
+      expect(results.events.imported).toBe(1); // Second import still creates
+    });
+
+    test('should skip events with invalid customer_id', () => {
+      const results = db.importBackup({
+        customers: [],
+        persons: [],
+        events: [{ customer_id: 'cust_nonexist', content: '无效事件' }]
+      });
+
+      expect(results.events.imported).toBe(0);
+    });
+  });
 });

@@ -418,6 +418,108 @@ class DB {
     };
   }
 
+  // Import methods
+
+  importBackup(data) {
+    const results = {
+      customers: { imported: 0, skipped: 0 },
+      persons: { imported: 0, skipped: 0 },
+      events: { imported: 0, skipped: 0 }
+    };
+
+    // Build ID mapping: old_id -> new_id
+    const customerIdMap = {};
+    const personIdMap = {};
+
+    // Track which customers already existed
+    const existingCustomerNames = new Set(
+      this.db.prepare('SELECT name FROM customer').all().map(c => c.name)
+    );
+
+    // Import customers (idempotent by name)
+    if (data.customers) {
+      for (const c of data.customers) {
+        const existing = this.customerEnsure(c.name);
+        customerIdMap[c.id] = existing.id;
+        if (existingCustomerNames.has(c.name)) {
+          results.customers.skipped++;
+        } else {
+          results.customers.imported++;
+        }
+      }
+    }
+
+    // Track which persons already existed
+    const existingPersons = new Set(
+      this.db.prepare('SELECT customer_id, name FROM person').all()
+        .map(p => `${p.customer_id}:${p.name}`)
+    );
+
+    // Import persons (idempotent by customer_id + name)
+    if (data.persons) {
+      for (const p of data.persons) {
+        const newCustomerId = customerIdMap[p.customer_id];
+        if (!newCustomerId) continue; // Skip if customer not imported
+
+        const existing = this.personEnsure(
+          newCustomerId,
+          p.name,
+          p.phone,
+          p.email,
+          p.title
+        );
+        personIdMap[p.id] = existing.id;
+        if (existingPersons.has(`${newCustomerId}:${p.name}`)) {
+          results.persons.skipped++;
+        } else {
+          results.persons.imported++;
+        }
+      }
+    }
+
+    // Import events (always create new)
+    if (data.events) {
+      for (const e of data.events) {
+        const newCustomerId = customerIdMap[e.customer_id];
+        if (!newCustomerId) continue;
+
+        const newPersonId = e.person_id ? personIdMap[e.person_id] : null;
+
+        this.eventAdd({
+          customerId: newCustomerId,
+          personId: newPersonId,
+          channel: e.channel,
+          action: e.action,
+          content: e.content,
+          amount: e.amount,
+          currency: e.currency,
+          occurredAt: e.occurred_at
+        });
+        results.events.imported++;
+      }
+    }
+
+    return results;
+  }
+
+  importEvents(events) {
+    let imported = 0;
+    for (const e of events) {
+      this.eventAdd({
+        customerId: e.customer_id,
+        personId: e.person_id,
+        channel: e.channel,
+        action: e.action,
+        content: e.content,
+        amount: e.amount,
+        currency: e.currency,
+        occurredAt: e.occurred_at
+      });
+      imported++;
+    }
+    return { imported };
+  }
+
   close() {
     this.db.close();
   }
