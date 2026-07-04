@@ -22,6 +22,16 @@ node solo.js --version
 
 After installation, read the SKILL.md in the installed directory to learn how to use this skill.
 
+## One-Line Install
+
+```bash
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/kongzong/solocrm/main/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/kongzong/solocrm/main/install.ps1 | iex
+```
+
 ## For Human
 
 ### Requirements
