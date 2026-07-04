@@ -7,18 +7,29 @@ param(
 
 $RepoUrl = "https://github.com/kongzong/solocrm.git"
 
-# Auto-detect skills directory
+Write-Host "=== SoloCRM Installer ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Select installation directory:" -ForegroundColor Cyan
+Write-Host "  1) $env:USERPROFILE\.claude\skills\solocrm (Claude)"
+Write-Host "  2) $env:USERPROFILE\.agents\skills\solocrm (opencode/others)"
+Write-Host "  3) Custom path"
+Write-Host ""
+
+# If argument provided, skip interactive
 if ($InstallDir -eq "") {
-    if (Test-Path "$env:USERPROFILE\.claude\skills") {
-        $InstallDir = "$env:USERPROFILE\.claude\skills\solocrm"
-    } elseif (Test-Path "$env:USERPROFILE\.agents\skills") {
-        $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
-    } else {
-        $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
+    $choice = Read-Host "Enter choice [1-3]"
+    
+    switch ($choice) {
+        "1" { $InstallDir = "$env:USERPROFILE\.claude\skills\solocrm" }
+        "2" { $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm" }
+        "3" { $InstallDir = Read-Host "Enter installation path" }
+        default {
+            Write-Host "Invalid choice. Using default." -ForegroundColor Yellow
+            $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
+        }
     }
 }
 
-Write-Host "=== SoloCRM Installer ===" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Installing to: $InstallDir" -ForegroundColor Cyan
 Write-Host ""
@@ -53,7 +64,3 @@ Write-Host ""
 Write-Host "=== Installation Complete ===" -ForegroundColor Green
 Write-Host ""
 Write-Host "Installed to: $InstallDir" -ForegroundColor Green
-Write-Host ""
-Write-Host "If your AI agent uses a different skills directory," -ForegroundColor Yellow
-Write-Host "move this folder there or run with a custom path:" -ForegroundColor Yellow
-Write-Host "  .\install.ps1 'C:\path\to\your\skills\solocrm'" -ForegroundColor Yellow
