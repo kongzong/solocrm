@@ -297,4 +297,50 @@ describe('Database', () => {
       expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeDefined();
     });
   });
+
+  describe('Search', () => {
+    let customerId;
+
+    beforeEach(() => {
+      const customer = db.customerEnsure('搜索测试公司');
+      customerId = customer.id;
+      const person = db.personEnsure(customerId, '搜索联系人');
+      
+      db.eventAdd({ customerId, personId: person.id, channel: 'meeting', content: '讨论预算30万' });
+      db.eventAdd({ customerId, channel: 'email', content: '发送报价邮件' });
+      db.eventAdd({ customerId, channel: 'call', content: '跟进电话' });
+    });
+
+    test('should search by keyword in content', () => {
+      const results = db.search({ keyword: '预算' });
+      expect(results.length).toBe(1);
+      expect(results[0].content).toContain('预算');
+    });
+
+    test('should search by keyword in customer name', () => {
+      const results = db.search({ keyword: '搜索测试' });
+      expect(results.length).toBe(3);
+    });
+
+    test('should search by keyword in person name', () => {
+      const results = db.search({ keyword: '搜索联系人' });
+      expect(results.length).toBe(1);
+    });
+
+    test('should filter search by channel', () => {
+      const results = db.search({ channel: 'email' });
+      expect(results.length).toBe(1);
+      expect(results[0].channel).toBe('email');
+    });
+
+    test('should filter search by customer', () => {
+      const results = db.search({ customerId });
+      expect(results.length).toBe(3);
+    });
+
+    test('should return empty for no matches', () => {
+      const results = db.search({ keyword: '不存在的内容' });
+      expect(results.length).toBe(0);
+    });
+  });
 });

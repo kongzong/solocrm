@@ -123,6 +123,11 @@ node solo.js timeline get cust_xxx --days 30
 
 # List events
 node solo.js event list --customer cust_xxx --limit 10
+
+# Search events by keyword
+node solo.js search "预算"
+node solo.js search "腾讯" --channel meeting
+node solo.js search "报价" --range 30d --format md
 ```
 
 ### Exporting Data

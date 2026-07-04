@@ -284,6 +284,66 @@ timelineCmd
     }
   });
 
+// Search commands
+program
+  .command('search')
+  .alias('s')
+  .description('Search events by keyword')
+  .argument('[keyword]', 'Search keyword')
+  .option('--customer <id>', 'Filter by customer ID')
+  .option('--channel <channel>', 'Filter by channel')
+  .option('--range <range>', 'Time range: 7d, 30d, 90d, 1y')
+  .option('--limit <n>', 'Max results', parseInt, 50)
+  .option('--format <format>', 'Output format: json, md', 'json')
+  .action((keyword, opts) => {
+    const db = getDb();
+    try {
+      const options = {
+        keyword,
+        customerId: opts.customer,
+        channel: opts.channel,
+        limit: opts.limit
+      };
+
+      // Parse range
+      if (opts.range) {
+        const match = opts.range.match(/^(\d+)(d|m|y)$/);
+        if (!match) {
+          console.error('Invalid range format. Use: 7d, 30d, 90d, 1y');
+          process.exit(1);
+        }
+        const [, num, unit] = match;
+        const days = unit === 'y' ? parseInt(num) * 365 : unit === 'm' ? parseInt(num) * 30 : parseInt(num);
+        options.days = days;
+      }
+
+      const results = db.search(options);
+
+      if (opts.format === 'json') {
+        console.log(JSON.stringify(results, null, 2));
+      } else if (opts.format === 'md') {
+        if (results.length === 0) {
+          console.log('No results found.');
+          return;
+        }
+
+        let md = `# Search Results${keyword ? `: "${keyword}"` : ''}\n\n`;
+        for (const r of results) {
+          const date = r.occurred_at ? r.occurred_at.split('T')[0] : 'unknown';
+          md += `## ${date} - ${r.customer_name}\n`;
+          if (r.person_name) md += `**With**: ${r.person_name}\n`;
+          md += `**Channel**: ${r.channel || 'unknown'}\n\n`;
+          md += `${r.content}\n\n`;
+          if (r.amount) md += `**Amount**: ${r.amount} ${r.currency || 'CNY'}\n\n`;
+          md += '---\n\n';
+        }
+        console.log(md);
+      }
+    } finally {
+      db.close();
+    }
+  });
+
 // Export commands
 const exportCmd = program
   .command('export')

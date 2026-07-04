@@ -110,6 +110,14 @@ solo event restore <id>                                                         
 solo timeline get <customer_id> --days 30  # Get timeline
 ```
 
+### Search Commands
+
+```bash
+solo search "预算"                           # Search all events
+solo search "腾讯" --channel meeting         # Search with filters
+solo search "报价" --range 30d --format md   # Search with time range
+```
+
 ### Export Commands
 
 ```bash

@@ -197,6 +197,57 @@ class DB {
     return { id, deleted_at: now };
   }
 
+  search(options = {}) {
+    let sql = `
+      SELECT 
+        e.id, e.customer_id, e.person_id, e.channel, e.action, 
+        e.content, e.amount, e.currency, e.occurred_at, e.recorded_at,
+        c.name as customer_name,
+        p.name as person_name
+      FROM event e
+      JOIN customer c ON e.customer_id = c.id AND c.deleted_at IS NULL
+      LEFT JOIN person p ON e.person_id = p.id AND p.deleted_at IS NULL
+      WHERE e.deleted_at IS NULL
+    `;
+    const conditions = [];
+    const params = [];
+
+    if (options.keyword) {
+      conditions.push('(e.content LIKE ? OR c.name LIKE ? OR p.name LIKE ?)');
+      const pattern = `%${options.keyword}%`;
+      params.push(pattern, pattern, pattern);
+    }
+
+    if (options.customerId) {
+      conditions.push('e.customer_id = ?');
+      params.push(options.customerId);
+    }
+
+    if (options.channel) {
+      conditions.push('e.channel = ?');
+      params.push(options.channel);
+    }
+
+    if (options.days) {
+      const cutoff = new Date(Date.now() - options.days * 24 * 60 * 60 * 1000).toISOString();
+      conditions.push('e.occurred_at >= ?');
+      params.push(cutoff);
+    }
+
+    if (conditions.length > 0) {
+      sql += ' AND ' + conditions.join(' AND ');
+    }
+
+    sql += ' ORDER BY e.occurred_at DESC';
+
+    if (options.limit) {
+      sql += ' LIMIT ?';
+      params.push(options.limit);
+    }
+
+    return this.db.prepare(sql).all(...params);
+  }
+
   // Timeline
 
   timelineGet(customerId, days = 90) {
