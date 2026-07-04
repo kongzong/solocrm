@@ -4,7 +4,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // Schema version - increment when schema changes
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 // Migration statements
 const MIGRATIONS = {
@@ -49,6 +49,10 @@ const MIGRATIONS = {
     `ALTER TABLE customer ADD COLUMN deleted_at DATETIME`,
     `ALTER TABLE person ADD COLUMN deleted_at DATETIME`,
     `ALTER TABLE event ADD COLUMN deleted_at DATETIME`,
+  ],
+  3: [
+    // Add amount_type for classifying amount meaning
+    `ALTER TABLE event ADD COLUMN amount_type TEXT DEFAULT 'mentioned'`,
   ]
 };
 
@@ -230,6 +234,7 @@ class DB {
     content,
     amount = null,
     currency = 'CNY',
+    amountType = 'mentioned',
     occurredAt = null
   }) {
     const id = `evt_${uuidv4().slice(0, 8)}`;
@@ -237,9 +242,9 @@ class DB {
     const occurred = occurredAt || now;
 
     this.db.prepare(
-      `INSERT INTO event (id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, customerId, personId, channel, action, content, amount, currency, occurred, now);
+      `INSERT INTO event (id, customer_id, person_id, channel, action, content, amount, currency, amount_type, occurred_at, recorded_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, customerId, personId, channel, action, content, amount, currency, amountType, occurred, now);
 
     return {
       id,
@@ -250,6 +255,7 @@ class DB {
       content,
       amount,
       currency,
+      amount_type: amountType,
       occurred_at: occurred,
       recorded_at: now
     };
@@ -522,6 +528,7 @@ class DB {
           content: e.content,
           amount: e.amount,
           currency: e.currency,
+          amountType: e.amount_type,
           occurredAt: e.occurred_at
         });
         results.events.imported++;
@@ -542,6 +549,7 @@ class DB {
         content: e.content,
         amount: e.amount,
         currency: e.currency,
+        amountType: e.amount_type,
         occurredAt: e.occurred_at
       });
       imported++;

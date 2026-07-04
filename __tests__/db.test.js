@@ -26,7 +26,7 @@ describe('Database', () => {
     test('should create schema_version table', () => {
       const row = db.db.prepare('SELECT version FROM schema_version').get();
       expect(row).toBeDefined();
-      expect(row.version).toBe(2); // Current version
+      expect(row.version).toBe(3); // Current version
     });
 
     test('should migrate old database without deleted_at', () => {
@@ -82,7 +82,7 @@ describe('Database', () => {
       
       // Verify schema version updated
       const row = db.db.prepare('SELECT version FROM schema_version').get();
-      expect(row.version).toBe(2);
+      expect(row.version).toBe(3);
       
       // Cleanup
       db.close();
@@ -99,7 +99,7 @@ describe('Database', () => {
       db2.close();
       
       const row = db.db.prepare('SELECT version FROM schema_version').get();
-      expect(row.version).toBe(2);
+      expect(row.version).toBe(3);
     });
   });
 
