@@ -18,7 +18,10 @@ if ($InstallDir -eq "") {
     }
 }
 
-Write-Host "Installing SoloCRM to $InstallDir..." -ForegroundColor Cyan
+Write-Host "=== SoloCRM Installer ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Installing to: $InstallDir" -ForegroundColor Cyan
+Write-Host ""
 
 # Create parent directory if needed
 $ParentDir = Split-Path $InstallDir -Parent
@@ -42,9 +45,15 @@ Write-Host "Installing dependencies..." -ForegroundColor Yellow
 npm install --production
 
 # Verify
+Write-Host ""
 Write-Host "Verifying installation..." -ForegroundColor Yellow
 $version = node solo.js --version
-Write-Host "SoloCRM $version installed successfully!" -ForegroundColor Green
 
 Write-Host ""
-Write-Host "Usage: node $InstallDir\solo.js <command>" -ForegroundColor Cyan
+Write-Host "=== Installation Complete ===" -ForegroundColor Green
+Write-Host ""
+Write-Host "Installed to: $InstallDir" -ForegroundColor Green
+Write-Host ""
+Write-Host "If your AI agent uses a different skills directory," -ForegroundColor Yellow
+Write-Host "move this folder there or run with a custom path:" -ForegroundColor Yellow
+Write-Host "  .\install.ps1 'C:\path\to\your\skills\solocrm'" -ForegroundColor Yellow

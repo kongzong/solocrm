@@ -17,7 +17,10 @@ fi
 
 INSTALL_DIR="${1:-$DEFAULT_DIR}"
 
-echo "Installing SoloCRM to $INSTALL_DIR..."
+echo "=== SoloCRM Installer ==="
+echo ""
+echo "Installing to: $INSTALL_DIR"
+echo ""
 
 # Create parent directory if needed
 mkdir -p "$(dirname "$INSTALL_DIR")"
@@ -38,9 +41,15 @@ echo "Installing dependencies..."
 npm install --production
 
 # Verify
+echo ""
 echo "Verifying installation..."
 node solo.js --version
 
 echo ""
-echo "Installation complete!"
-echo "Usage: node $INSTALL_DIR/solo.js <command>"
+echo "=== Installation Complete ==="
+echo ""
+echo "Installed to: $INSTALL_DIR"
+echo ""
+echo "If your AI agent uses a different skills directory,"
+echo "move this folder there or run with a custom path:"
+echo "  bash install.sh /path/to/your/skills/solocrm"
