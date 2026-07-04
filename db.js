@@ -3,6 +3,55 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
+// Schema version - increment when schema changes
+const SCHEMA_VERSION = 2;
+
+// Migration statements
+const MIGRATIONS = {
+  1: [
+    // Initial schema
+    `CREATE TABLE IF NOT EXISTS customer (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      meta JSON
+    )`,
+    `CREATE TABLE IF NOT EXISTS person (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      title TEXT,
+      FOREIGN KEY (customer_id) REFERENCES customer(id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS event (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL,
+      person_id TEXT,
+      channel TEXT,
+      action TEXT,
+      content TEXT NOT NULL,
+      amount REAL,
+      currency TEXT DEFAULT 'CNY',
+      occurred_at DATETIME,
+      recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      meta JSON,
+      FOREIGN KEY (customer_id) REFERENCES customer(id),
+      FOREIGN KEY (person_id) REFERENCES person(id)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_event_customer ON event(customer_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_event_occurred ON event(occurred_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_person_customer ON person(customer_id)`,
+  ],
+  2: [
+    // Add deleted_at columns for soft delete
+    `ALTER TABLE customer ADD COLUMN deleted_at DATETIME`,
+    `ALTER TABLE person ADD COLUMN deleted_at DATETIME`,
+    `ALTER TABLE event ADD COLUMN deleted_at DATETIME`,
+  ]
+};
+
 class DB {
   constructor(dbPath) {
     const dir = path.dirname(dbPath);
@@ -11,51 +60,56 @@ class DB {
     }
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
-    this._initSchema();
+    this._migrate();
   }
 
-  _initSchema() {
+  _migrate() {
+    // Create version table if not exists
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS customer (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        deleted_at DATETIME,
-        meta JSON
-      );
-
-      CREATE TABLE IF NOT EXISTS person (
-        id TEXT PRIMARY KEY,
-        customer_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        phone TEXT,
-        email TEXT,
-        title TEXT,
-        deleted_at DATETIME,
-        FOREIGN KEY (customer_id) REFERENCES customer(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS event (
-        id TEXT PRIMARY KEY,
-        customer_id TEXT NOT NULL,
-        person_id TEXT,
-        channel TEXT,
-        action TEXT,
-        content TEXT NOT NULL,
-        amount REAL,
-        currency TEXT DEFAULT 'CNY',
-        occurred_at DATETIME,
-        recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        deleted_at DATETIME,
-        meta JSON,
-        FOREIGN KEY (customer_id) REFERENCES customer(id),
-        FOREIGN KEY (person_id) REFERENCES person(id)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_event_customer ON event(customer_id);
-      CREATE INDEX IF NOT EXISTS idx_event_occurred ON event(occurred_at);
-      CREATE INDEX IF NOT EXISTS idx_person_customer ON person(customer_id);
+      CREATE TABLE IF NOT EXISTS schema_version (
+        version INTEGER PRIMARY KEY
+      )
     `);
+
+    // Get current version
+    const row = this.db.prepare('SELECT version FROM schema_version').get();
+    const currentVersion = row ? row.version : 0;
+
+    if (currentVersion >= SCHEMA_VERSION) {
+      return; // Already up to date
+    }
+
+    // Run migrations
+    this.db.exec('BEGIN TRANSACTION');
+    try {
+      for (let v = currentVersion + 1; v <= SCHEMA_VERSION; v++) {
+        const statements = MIGRATIONS[v];
+        if (statements) {
+          for (const sql of statements) {
+            try {
+              this.db.exec(sql);
+            } catch (err) {
+              // Ignore "duplicate column" errors for ALTER TABLE
+              if (!err.message.includes('duplicate column')) {
+                throw err;
+              }
+            }
+          }
+        }
+      }
+
+      // Update version
+      if (currentVersion === 0) {
+        this.db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(SCHEMA_VERSION);
+      } else {
+        this.db.prepare('UPDATE schema_version SET version = ?').run(SCHEMA_VERSION);
+      }
+
+      this.db.exec('COMMIT');
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
   }
 
   // Customer operations

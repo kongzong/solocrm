@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const Database = require('better-sqlite3');
 const DB = require('../db');
 
 describe('Database', () => {
@@ -19,6 +20,87 @@ describe('Database', () => {
     if (fs.existsSync(testDbPath)) {
       fs.unlinkSync(testDbPath);
     }
+  });
+
+  describe('Migration', () => {
+    test('should create schema_version table', () => {
+      const row = db.db.prepare('SELECT version FROM schema_version').get();
+      expect(row).toBeDefined();
+      expect(row.version).toBe(2); // Current version
+    });
+
+    test('should migrate old database without deleted_at', () => {
+      // Close current db
+      db.close();
+      
+      // Use a different path for old database
+      const oldDbPath = path.join(os.tmpdir(), `test-solocrm-old-${Date.now()}.db`);
+      
+      // Create an old-style database (without deleted_at)
+      const oldDb = new Database(oldDbPath);
+      oldDb.exec(`
+        CREATE TABLE customer (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          meta JSON
+        );
+        CREATE TABLE person (
+          id TEXT PRIMARY KEY,
+          customer_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          phone TEXT,
+          email TEXT,
+          title TEXT,
+          FOREIGN KEY (customer_id) REFERENCES customer(id)
+        );
+        CREATE TABLE event (
+          id TEXT PRIMARY KEY,
+          customer_id TEXT NOT NULL,
+          person_id TEXT,
+          channel TEXT,
+          action TEXT,
+          content TEXT NOT NULL,
+          amount REAL,
+          currency TEXT DEFAULT 'CNY',
+          occurred_at DATETIME,
+          recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          meta JSON,
+          FOREIGN KEY (customer_id) REFERENCES customer(id),
+          FOREIGN KEY (person_id) REFERENCES person(id)
+        );
+      `);
+      oldDb.close();
+      
+      // Open with new DB class - should auto-migrate
+      db = new DB(oldDbPath);
+      
+      // Verify deleted_at column exists
+      const columns = db.db.prepare("PRAGMA table_info(customer)").all();
+      const hasDeletedAt = columns.some(c => c.name === 'deleted_at');
+      expect(hasDeletedAt).toBe(true);
+      
+      // Verify schema version updated
+      const row = db.db.prepare('SELECT version FROM schema_version').get();
+      expect(row.version).toBe(2);
+      
+      // Cleanup
+      db.close();
+      if (fs.existsSync(oldDbPath)) {
+        fs.unlinkSync(oldDbPath);
+      }
+      // Reassign testDbPath for afterEach cleanup
+      testDbPath = oldDbPath;
+    });
+
+    test('should be idempotent on fresh database', () => {
+      // Opening same database twice should work
+      const db2 = new DB(testDbPath);
+      db2.close();
+      
+      const row = db.db.prepare('SELECT version FROM schema_version').get();
+      expect(row.version).toBe(2);
+    });
   });
 
   describe('Customer', () => {
