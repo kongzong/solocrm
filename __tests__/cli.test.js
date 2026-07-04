@@ -13,8 +13,7 @@ const TEST_DB_PATH = path.join(TEST_DB_DIR, 'data.db');
 function run(command, options = {}) {
   const env = {
     ...process.env,
-    HOME: TEST_DB_DIR,
-    USERPROFILE: TEST_DB_DIR
+    SOLOCRM_DB: TEST_DB_PATH
   };
   
   try {
