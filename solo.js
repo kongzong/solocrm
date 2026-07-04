@@ -20,6 +20,8 @@ function getDb() {
   return new DB(getDbPath());
 }
 
+const parseDateInt = (v) => parseInt(v, 10);
+
 // CSV helper
 function arrayToCsv(data) {
   if (!data || data.length === 0) return '';
@@ -229,7 +231,7 @@ eventCmd
   .command('list')
   .description('List events for a customer')
   .requiredOption('--customer <id>', 'Customer ID')
-  .option('--limit <n>', 'Max results', parseInt, 50)
+  .option('--limit <n>', 'Max results', parseDateInt, 50)
   .action((opts) => {
     const db = getDb();
     try {
@@ -275,7 +277,7 @@ const timelineCmd = program
 timelineCmd
   .command('get <id>')
   .description('Get timeline for a customer')
-  .option('--days <n>', 'Days to look back', parseInt, 90)
+  .option('--days <n>', 'Days to look back', parseDateInt, 90)
   .action((id, opts) => {
     const db = getDb();
     try {
@@ -295,7 +297,7 @@ program
   .option('--customer <id>', 'Filter by customer ID')
   .option('--channel <channel>', 'Filter by channel')
   .option('--range <range>', 'Time range: 7d, 30d, 90d, 1y')
-  .option('--limit <n>', 'Max results', parseInt, 50)
+  .option('--limit <n>', 'Max results', parseDateInt, 50)
   .option('--format <format>', 'Output format: json, md', 'json')
   .action((keyword, opts) => {
     const db = getDb();
@@ -397,7 +399,7 @@ exportCmd
   .description('Export timeline')
   .requiredOption('--customer <id>', 'Customer ID')
   .option('--format <format>', 'Output format: json, md', 'md')
-  .option('--days <n>', 'Days to look back', parseInt, 90)
+  .option('--days <n>', 'Days to look back', parseDateInt, 90)
   .action((opts) => {
     const db = getDb();
     try {
@@ -445,7 +447,7 @@ exportCmd
   .option('--range <range>', 'Time range: 7d, 30d, 90d, 1y')
   .option('--channel <channel>', 'Filter by channel')
   .option('--format <format>', 'Output format: ndjson, json, md, csv', 'ndjson')
-  .option('--limit <n>', 'Max results', parseInt, 1000)
+  .option('--limit <n>', 'Max results', parseDateInt, 1000)
   .action((opts) => {
     const db = getDb();
     try {
