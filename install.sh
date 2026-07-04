@@ -4,8 +4,18 @@
 
 set -e
 
-INSTALL_DIR="${1:-$HOME/.agents/skills/solocrm}"
-REPO_URL="https://github.com/your-username/solocrm.git"
+REPO_URL="https://github.com/kongzong/solocrm.git"
+
+# Auto-detect skills directory
+if [ -d "$HOME/.claude/skills" ]; then
+    DEFAULT_DIR="$HOME/.claude/skills/solocrm"
+elif [ -d "$HOME/.agents/skills" ]; then
+    DEFAULT_DIR="$HOME/.agents/skills/solocrm"
+else
+    DEFAULT_DIR="$HOME/.agents/skills/solocrm"
+fi
+
+INSTALL_DIR="${1:-$DEFAULT_DIR}"
 
 echo "Installing SoloCRM to $INSTALL_DIR..."
 

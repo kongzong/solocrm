@@ -2,10 +2,21 @@
 # Usage: .\install.ps1 [install_dir]
 
 param(
-    [string]$InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
+    [string]$InstallDir = ""
 )
 
-$RepoUrl = "https://github.com/your-username/solocrm.git"
+$RepoUrl = "https://github.com/kongzong/solocrm.git"
+
+# Auto-detect skills directory
+if ($InstallDir -eq "") {
+    if (Test-Path "$env:USERPROFILE\.claude\skills") {
+        $InstallDir = "$env:USERPROFILE\.claude\skills\solocrm"
+    } elseif (Test-Path "$env:USERPROFILE\.agents\skills") {
+        $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
+    } else {
+        $InstallDir = "$env:USERPROFILE\.agents\skills\solocrm"
+    }
+}
 
 Write-Host "Installing SoloCRM to $InstallDir..." -ForegroundColor Cyan
 
