@@ -13,7 +13,7 @@ program
   .version('0.1.0');
 
 function getDbPath() {
-  return path.join(os.homedir(), '.solocrm', 'data.db');
+  return process.env.SOLOCRM_DB || path.join(os.homedir(), '.solocrm', 'data.db');
 }
 
 function getDb() {
