@@ -447,23 +447,61 @@ describe('Database', () => {
       expect(results.events.imported).toBe(1);
     });
 
-    test('should not duplicate customers with same name', () => {
+    test('should not duplicate persons with same phone', () => {
+      const customer = db.customerEnsure('手机去重客户');
+
       // First import
       db.importBackup({
-        customers: [{ id: 'cust_001', name: '唯一客户' }],
-        persons: [],
+        customers: [customer],
+        persons: [{ customer_id: customer.id, name: '联系人A', phone: '13900001111' }],
         events: []
       });
 
-      // Second import - should skip
+      // Second import - same phone, should skip
       const results = db.importBackup({
-        customers: [{ id: 'cust_002', name: '唯一客户' }],
-        persons: [],
+        customers: [customer],
+        persons: [{ customer_id: customer.id, name: '联系人B', phone: '13900001111' }],
         events: []
       });
 
-      expect(results.customers.imported).toBe(0);
-      expect(results.customers.skipped).toBe(1);
+      expect(results.persons.imported).toBe(0);
+      expect(results.persons.skipped).toBe(1);
+    });
+
+    test('should not duplicate persons with same email', () => {
+      const customer = db.customerEnsure('邮箱去重客户');
+
+      // First import
+      db.importBackup({
+        customers: [customer],
+        persons: [{ customer_id: customer.id, name: '联系人A', email: 'test@example.com' }],
+        events: []
+      });
+
+      // Second import - same email, should skip
+      const results = db.importBackup({
+        customers: [customer],
+        persons: [{ customer_id: customer.id, name: '联系人B', email: 'test@example.com' }],
+        events: []
+      });
+
+      expect(results.persons.imported).toBe(0);
+      expect(results.persons.skipped).toBe(1);
+    });
+
+    test('should allow different phones for same customer', () => {
+      const customer = db.customerEnsure('不同手机客户');
+
+      const results = db.importBackup({
+        customers: [customer],
+        persons: [
+          { customer_id: customer.id, name: '联系人A', phone: '13900001111' },
+          { customer_id: customer.id, name: '联系人B', phone: '13900002222' }
+        ],
+        events: []
+      });
+
+      expect(results.persons.imported).toBe(2);
     });
 
     test('should always create new events', () => {

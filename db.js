@@ -175,6 +175,22 @@ class DB {
     return { id, customer_id: customerId, name, phone, email, title };
   }
 
+  personFindByPhone(customerId, phone) {
+    if (!phone) return null;
+    const p = this.db.prepare(
+      'SELECT id FROM person WHERE customer_id = ? AND phone = ? AND deleted_at IS NULL'
+    ).get(customerId, phone);
+    return p ? p.id : null;
+  }
+
+  personFindByEmail(customerId, email) {
+    if (!email) return null;
+    const p = this.db.prepare(
+      'SELECT id FROM person WHERE customer_id = ? AND email = ? AND deleted_at IS NULL'
+    ).get(customerId, email);
+    return p ? p.id : null;
+  }
+
   personList(customerId) {
     return this.db.prepare(
       'SELECT id, customer_id, name, phone, email, title FROM person WHERE customer_id = ? AND deleted_at IS NULL ORDER BY name'
@@ -449,17 +465,34 @@ class DB {
       }
     }
 
-    // Track which persons already existed
-    const existingPersons = new Set(
-      this.db.prepare('SELECT customer_id, name FROM person').all()
-        .map(p => `${p.customer_id}:${p.name}`)
-    );
+    // Track which persons already existed (by phone or email)
+    const existingPersons = new Set();
+    this.db.prepare('SELECT customer_id, phone, email FROM person')
+      .all()
+      .forEach(p => {
+        if (p.phone) existingPersons.add(`${p.customer_id}:phone:${p.phone}`);
+        if (p.email) existingPersons.add(`${p.customer_id}:email:${p.email}`);
+      });
 
-    // Import persons (idempotent by customer_id + name)
+    // Import persons (idempotent by customer+phone or customer+email)
     if (data.persons) {
       for (const p of data.persons) {
         const newCustomerId = customerIdMap[p.customer_id];
-        if (!newCustomerId) continue; // Skip if customer not imported
+        if (!newCustomerId) continue;
+
+        // Check if already exists by phone or email
+        const key = p.phone
+          ? `${newCustomerId}:phone:${p.phone}`
+          : p.email
+            ? `${newCustomerId}:email:${p.email}`
+            : null;
+        
+        if (key && existingPersons.has(key)) {
+          personIdMap[p.id] = this.personFindByPhone(newCustomerId, p.phone) ||
+                               this.personFindByEmail(newCustomerId, p.email);
+          results.persons.skipped++;
+          continue;
+        }
 
         const existing = this.personEnsure(
           newCustomerId,
@@ -469,11 +502,7 @@ class DB {
           p.title
         );
         personIdMap[p.id] = existing.id;
-        if (existingPersons.has(`${newCustomerId}:${p.name}`)) {
-          results.persons.skipped++;
-        } else {
-          results.persons.imported++;
-        }
+        results.persons.imported++;
       }
     }
 
