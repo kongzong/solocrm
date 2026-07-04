@@ -264,5 +264,37 @@ describe('Database', () => {
       expect(db.personList(customer.id).find(p => p.id === person.id)).toBeUndefined();
       expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeUndefined();
     });
+
+    test('should restore soft-deleted customer', () => {
+      const customer = db.customerEnsure('待恢复客户');
+      db.customerDelete(customer.id);
+      expect(db.customerGet(customer.id)).toBeNull();
+      
+      const result = db.customerRestore(customer.id);
+      expect(result.restored).toBe(true);
+      expect(db.customerGet(customer.id)).not.toBeNull();
+    });
+
+    test('should restore soft-deleted person', () => {
+      const customer = db.customerEnsure('测试客户');
+      const person = db.personEnsure(customer.id, '待恢复联系人');
+      db.personDelete(person.id);
+      expect(db.personList(customer.id).find(p => p.id === person.id)).toBeUndefined();
+      
+      const result = db.personRestore(person.id);
+      expect(result.restored).toBe(true);
+      expect(db.personList(customer.id).find(p => p.id === person.id)).toBeDefined();
+    });
+
+    test('should restore soft-deleted event', () => {
+      const customer = db.customerEnsure('测试客户');
+      const event = db.eventAdd({ customerId: customer.id, content: '待恢复事件' });
+      db.eventDelete(event.id);
+      expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeUndefined();
+      
+      const result = db.eventRestore(event.id);
+      expect(result.restored).toBe(true);
+      expect(db.eventList(customer.id).find(e => e.id === event.id)).toBeDefined();
+    });
   });
 });

@@ -110,6 +110,19 @@ customerCmd
     }
   });
 
+customerCmd
+  .command('restore <id>')
+  .description('Restore soft-deleted customer')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.customerRestore(id);
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
 // Person commands
 const personCmd = program
   .command('person')
@@ -155,6 +168,19 @@ personCmd
     const db = getDb();
     try {
       const result = db.personDelete(id);
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
+personCmd
+  .command('restore <id>')
+  .description('Restore soft-deleted person')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.personRestore(id);
       console.log(JSON.stringify(result, null, 2));
     } finally {
       db.close();
@@ -219,6 +245,19 @@ eventCmd
     const db = getDb();
     try {
       const result = db.eventDelete(id);
+      console.log(JSON.stringify(result, null, 2));
+    } finally {
+      db.close();
+    }
+  });
+
+eventCmd
+  .command('restore <id>')
+  .description('Restore soft-deleted event')
+  .action((id) => {
+    const db = getDb();
+    try {
+      const result = db.eventRestore(id);
       console.log(JSON.stringify(result, null, 2));
     } finally {
       db.close();

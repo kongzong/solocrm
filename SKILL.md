@@ -94,6 +94,19 @@ node solo.js person delete pers_xxx
 node solo.js event delete evt_xxx
 ```
 
+### Restoring Facts
+
+```bash
+# Restore soft-deleted customer
+node solo.js customer restore cust_xxx
+
+# Restore soft-deleted person
+node solo.js person restore pers_xxx
+
+# Restore soft-deleted event
+node solo.js event restore evt_xxx
+```
+
 **Note**: Deleted records are hidden from queries but preserved in database for audit.
 
 ### Querying Facts

@@ -83,6 +83,7 @@ solo customer ensure --name "腾讯"     # Create or get (idempotent)
 solo customer get <id>                  # Get by ID
 solo customer list                      # List all customers
 solo customer delete <id>               # Soft delete customer
+solo customer restore <id>              # Restore soft-deleted customer
 ```
 
 ### Person Commands
@@ -91,6 +92,7 @@ solo customer delete <id>               # Soft delete customer
 solo person ensure --customer <id> --name "张三"  # Create or get
 solo person list --customer <id>                   # List contacts for customer
 solo person delete <id>                             # Soft delete person
+solo person restore <id>                            # Restore soft-deleted person
 ```
 
 ### Event Commands
@@ -99,6 +101,7 @@ solo person delete <id>                             # Soft delete person
 solo event add --customer <id> --channel meeting --event-action note --content "..."  # Add event
 solo event list --customer <id> --limit 10                                             # List events
 solo event delete <id>                                                                  # Soft delete event
+solo event restore <id>                                                                 # Restore soft-deleted event
 ```
 
 ### Timeline Commands

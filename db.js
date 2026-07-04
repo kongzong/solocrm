@@ -135,6 +135,21 @@ class DB {
     return { id, deleted_at: now };
   }
 
+  customerRestore(id) {
+    this.db.prepare('UPDATE customer SET deleted_at = NULL WHERE id = ?').run(id);
+    return { id, restored: true };
+  }
+
+  personRestore(id) {
+    this.db.prepare('UPDATE person SET deleted_at = NULL WHERE id = ?').run(id);
+    return { id, restored: true };
+  }
+
+  eventRestore(id) {
+    this.db.prepare('UPDATE event SET deleted_at = NULL WHERE id = ?').run(id);
+    return { id, restored: true };
+  }
+
   // Event operations
 
   eventAdd({
