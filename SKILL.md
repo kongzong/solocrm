@@ -250,6 +250,48 @@ node solo.js event add \
 node solo.js export events --customer cust_xxx --channel meeting --range 30d --format csv > tencent_meetings.csv
 ```
 
+## Personal Use: Social Gift Tracking (人情往来)
+
+SoloCRM can track personal social gifts by treating people as "customers".
+
+### Setup
+
+```bash
+# Create a person as a customer
+node solo.js customer ensure --name "张三"
+```
+
+### Record Gifts
+
+```bash
+# Received gift (收礼)
+node solo.js event add \
+  --customer cust_xxx \
+  --content "结婚随礼" \
+  --amount 600 \
+  --amount-type payment_in
+
+# Gave gift (送礼)
+node solo.js event add \
+  --customer cust_xxx \
+  --content "孩子满月回礼" \
+  --amount 800 \
+  --amount-type payment_out
+```
+
+### Query
+
+```bash
+# View gift history for a person
+node solo.js event list --customer cust_xxx
+
+# Search all gifts
+node solo.js search "随礼"
+
+# Export gift records
+node solo.js export events --customer cust_xxx --format csv > gifts.csv
+```
+
 ## What NOT to Record
 
 - Customer "等级" or "阶段" (let AI infer from facts)
