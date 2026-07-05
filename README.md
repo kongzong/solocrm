@@ -210,6 +210,39 @@ solo config remove-profile "work"
 | `--channel` | `meeting`, `call` | 按渠道过滤 |
 | `--customer` | `cust_xxx` | 按客户过滤 |
 
+## 扩展用法
+
+SoloCRM 的数据模型具备通用性，可以扩展到多种场景：
+
+```
+Customer（实体分组） → Person（关联项） → Event（事件记录）
+```
+
+| 场景 | Customer | Person | Event |
+|------|----------|--------|-------|
+| 客户管理 | 公司 | 联系人 | 会议/跟进 |
+| 人情往来 | 朋友/亲戚 | - | 礼金记录 |
+| 旅行记账 | 旅行名 | 分类（餐饮/交通/住宿） | 每笔花费 |
+| 项目管理 | 项目名 | 成员 | 任务/里程碑 |
+| 学习记录 | 课程/主题 | - | 每次学习笔记 |
+| 健康追踪 | 指标（体重/血压） | - | 每次测量 |
+
+### 旅行记账示例
+
+```bash
+# 建账本
+solo customer ensure --name "潮汕5日游"
+solo person ensure --customer cust_xxx --name "餐饮"
+solo person ensure --customer cust_xxx --name "交通"
+solo person ensure --customer cust_xxx --name "住宿"
+
+# 记账
+solo event add --customer cust_xxx --person pers_餐饮 --content "牛肉火锅" --amount 180 --amount-type payment_out
+
+# 导出
+solo export events --customer cust_xxx --format csv > 旅行账单.csv
+```
+
 ## 数据库
 
 SQLite 数据库存储位置：`~/.solocrm/data.db`
