@@ -292,6 +292,66 @@ node solo.js search "随礼"
 node solo.js export events --customer cust_xxx --format csv > gifts.csv
 ```
 
+## Multi-Profile Support
+
+SoloCRM supports multiple databases via profiles for separating different data contexts (e.g., work vs personal).
+
+### Profile Management
+
+```bash
+# Add a profile
+node solo.js config add-profile "work" --path "~/.solocrm/work.db"
+
+# Add a profile with Chinese name
+node solo.js config add-profile "我的人情来往" --path "~/Dropbox/solocrm/social.db"
+
+# List all profiles
+node solo.js config list-profiles
+
+# Remove a profile
+node solo.js config remove-profile "work"
+```
+
+### Using Profiles
+
+```bash
+# Use a specific profile
+node solo.js --profile "work" customer list
+node solo.js --profile "我的人情来往" event list --customer cust_xxx
+
+# Default (no profile specified)
+node solo.js customer list
+```
+
+### AI Agent Behavior with Multiple Profiles
+
+**When user context has a clear profile:**
+- Use it directly, no need to ask
+
+**When no profile is specified and multiple profiles exist:**
+- Ask user: "要记录到哪个数据库？"
+- List available profiles
+
+**When writing, always confirm with user:**
+- Show which profile will be used
+- Let user confirm or switch
+
+### Example Conversation
+
+```
+User: 记录一下，收到张三礼金600元
+
+AI: 当前有多个数据库：
+    1. work (工作数据)
+    2. 我的人情来往 (个人社交)
+    
+    要记录到哪个数据库？
+
+User: 人情来往
+
+AI: [我的人情来往] 已记录收到张三礼金600元
+```
+
 ## What NOT to Record
 
 - Customer "等级" or "阶段" (let AI infer from facts)

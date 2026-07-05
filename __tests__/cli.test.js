@@ -332,4 +332,55 @@ describe('CLI', () => {
       expect(exitCode).toBe(1);
     });
   });
+
+  describe('Profile Commands', () => {
+    const testConfigPath = path.join(TEST_DB_DIR, 'config.json');
+
+    beforeEach(() => {
+      // Clean up config
+      if (fs.existsSync(testConfigPath)) {
+        fs.unlinkSync(testConfigPath);
+      }
+    });
+
+    test('should add a profile', () => {
+      const { stdout, exitCode } = run(`config add-profile "work" --path "${path.join(TEST_DB_DIR, 'work.db')}"`);
+      expect(exitCode).toBe(0);
+      const result = JSON.parse(stdout);
+      expect(result.success).toBe(true);
+      expect(result.profile.name).toBe('work');
+    });
+
+    test('should list profiles', () => {
+      run(`config add-profile "work" --path "${path.join(TEST_DB_DIR, 'work.db')}"`);
+      const { stdout } = run('config list-profiles');
+      const profiles = JSON.parse(stdout);
+      expect(profiles.length).toBe(1);
+      expect(profiles[0].name).toBe('work');
+    });
+
+    test('should remove a profile', () => {
+      run(`config add-profile "work" --path "${path.join(TEST_DB_DIR, 'work.db')}"`);
+      const { stdout, exitCode } = run('config remove-profile "work"');
+      expect(exitCode).toBe(0);
+      const result = JSON.parse(stdout);
+      expect(result.success).toBe(true);
+    });
+
+    test('should use profile for database operations', () => {
+      // Add profile
+      run(`config add-profile "work" --path "${path.join(TEST_DB_DIR, 'work-profile.db')}"`);
+      
+      // Use profile
+      const { stdout, exitCode } = run('--profile "work" customer ensure --name "TestCorp"');
+      expect(exitCode).toBe(0);
+      const customer = JSON.parse(stdout);
+      expect(customer.name).toBe('TestCorp');
+    });
+
+    test('should show error for non-existent profile', () => {
+      const { exitCode } = run('--profile "nonexistent" customer list');
+      expect(exitCode).toBe(1);
+    });
+  });
 });

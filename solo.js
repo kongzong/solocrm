@@ -4,20 +4,44 @@ const { Command } = require('commander');
 const path = require('path');
 const os = require('os');
 const DB = require('./db');
+const Config = require('./config');
 
 const program = new Command();
+const config = new Config();
 
 program
   .name('solo')
   .description('AI Agent business fact kernel')
   .version('0.1.0');
 
+// Global profile option
+program.option('--profile <name>', 'Use specified profile');
+
 function getDbPath() {
-  return process.env.SOLOCRM_DB || path.join(os.homedir(), '.solocrm', 'data.db');
+  // Priority: SOLOCRM_DB env > profile from config > default
+  if (process.env.SOLOCRM_DB) {
+    return process.env.SOLOCRM_DB;
+  }
+  
+  const profileName = program.opts().profile;
+  try {
+    return config.getDbPath(profileName);
+  } catch (e) {
+    console.error(JSON.stringify({ error: e.message }));
+    process.exit(1);
+  }
 }
 
 function getDb() {
   return new DB(getDbPath());
+}
+
+// Get current profile name for output
+function getCurrentProfile() {
+  if (process.env.SOLOCRM_DB) {
+    return 'env';
+  }
+  return program.opts().profile || 'default';
 }
 
 const parseDateInt = (v) => parseInt(v, 10);
@@ -47,6 +71,47 @@ function arrayToCsv(data) {
   
   return lines.join('\n');
 }
+
+// Profile commands
+const profileCmd = program
+  .command('config')
+  .alias('cfg')
+  .description('Profile configuration');
+
+profileCmd
+  .command('add-profile <name>')
+  .description('Add a new profile')
+  .requiredOption('--path <dbPath>', 'Database file path')
+  .action((name, opts) => {
+    const result = config.addProfile(name, opts.path);
+    console.log(JSON.stringify({ success: true, profile: result }, null, 2));
+  });
+
+profileCmd
+  .command('remove-profile <name>')
+  .description('Remove a profile')
+  .action((name) => {
+    const success = config.removeProfile(name);
+    if (success) {
+      console.log(JSON.stringify({ success: true, message: `Profile removed: ${name}` }, null, 2));
+    } else {
+      console.error(JSON.stringify({ error: `Profile not found: ${name}` }));
+      process.exit(1);
+    }
+  });
+
+profileCmd
+  .command('list-profiles')
+  .description('List all profiles')
+  .action(() => {
+    const profiles = config.listProfiles();
+    if (profiles.length === 0) {
+      console.log('No profiles configured.');
+      console.log('Default database: ~/.solocrm/data.db');
+    } else {
+      console.log(JSON.stringify(profiles, null, 2));
+    }
+  });
 
 // Customer commands
 const customerCmd = program
