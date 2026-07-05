@@ -198,7 +198,8 @@ When parsing user input, extract:
 6. **Amount**: Numbers with monetary context (30万=300000, 15k=15000)
 7. **Amount Type**: Classify amount meaning using recommended values:
    - `contract` - 合同金额 (签了50万合同)
-   - `payment` - 回款 (收到30万回款)
+   - `payment_in` - 收款 (收到30万回款)
+   - `payment_out` - 付款 (付了10万给供应商)
    - `budget` - 预算 (他们预算200万)
    - `quote` - 报价 (报价15万)
    - `deposit` - 定金/预付 (付了10万定金)

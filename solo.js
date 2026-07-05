@@ -205,7 +205,7 @@ eventCmd
   .option('--event-action <action>', 'Action: note, request, decision, commitment')
   .option('--amount <amount>', 'Amount mentioned', parseFloat)
   .option('--currency <currency>', 'Currency (default: CNY)', 'CNY')
-  .option('--amount-type <type>', 'Amount type: contract, payment, budget, quote, deposit, mentioned', 'mentioned')
+  .option('--amount-type <type>', 'Amount type: contract, payment_in, payment_out, budget, quote, deposit, mentioned', 'mentioned')
   .option('--occurred-at <date>', 'When it happened (ISO8601)')
   .action((opts) => {
     const db = getDb();
