@@ -4,6 +4,55 @@ AI Agent 业务事实内核，用于记录和查询结构化业务事实。
 
 [English Documentation](README_EN.md)
 
+## 这是什么？
+
+SoloCRM 是一个 **AI Agent Skill**，不是传统的 CRM 应用。
+
+**核心理念：** CLI 是 headless 接口，主要供 AI Agent 使用，而非人类直接操作。
+
+```
+用户 ←→ AI Agent ←→ solo CLI ←→ SQLite
+```
+
+- **用户**：用自然语言描述业务事件
+- **AI Agent**：理解语义，翻译成 CLI 命令
+- **solo CLI**：执行命令，读写数据库
+- **SQLite**：持久化存储结构化事实
+
+### 文件说明
+
+| 文件 | 用途 |
+|------|------|
+| `SKILL.md` | AI Agent 的指令手册，AI 安装后首先阅读此文件 |
+| `solo.js` | CLI 入口，AI Agent 通过它执行所有操作 |
+| `README.md` | 人类用户文档 |
+
+### AI Agent 使用流程
+
+```
+1. 用户安装 skill 到 agent 的 skills 目录
+2. Agent 读取 SKILL.md，学习如何使用
+3. 用户用自然语言描述事件
+4. Agent 解析语义，生成 solo CLI 命令
+5. Agent 执行命令，返回结果给用户
+```
+
+**示例：**
+
+```
+用户：记录一下，昨天和腾讯张三开会，讨论了30万的合同
+
+Agent 执行：
+  solo customer ensure --name "腾讯"
+  solo person ensure --customer cust_xxx --name "张三"
+  solo event add --customer cust_xxx --person pers_xxx \
+    --channel meeting --content "讨论30万合同" \
+    --amount 300000 --amount-type contract
+
+Agent 回复：
+  已记录：腾讯-张三 会议，合同金额30万
+```
+
 ## AI Agent 安装
 
 如果用户要求你安装此 skill，请执行以下步骤：
