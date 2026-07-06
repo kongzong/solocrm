@@ -230,6 +230,8 @@ node solo.js event add \
 | 进货、出货、库存、商品、入库、出库 | [references/lightweight-inventory.md](references/lightweight-inventory.md) |
 | 日记、日志、记录、今天、日常 | [references/daily-records.md](references/daily-records.md) |
 
+> **提示**：使用扩展玩法时，建议搭配多 profile 多数据库，不同玩法隔离使用不同数据库，避免数据混杂。例如：工作数据用 `work`，人情往来用 `人情往来`，旅行记账用 `旅行记账`。
+
 ## 多数据库支持
 
 SoloCRM 支持通过 profile 使用多个数据库（如工作数据和个人数据分离）。
