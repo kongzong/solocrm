@@ -1,218 +1,187 @@
 # SoloCRM Skill
 
-AI Agent business fact kernel for recording and querying structured business facts.
+AI Agent 业务事实内核，用于记录和查询结构化业务事实。
 
-## Installation
+## 何时激活
 
-When user provides this skill's GitHub URL, install it as follows:
+当用户提供以下信息时激活：
+- 客户会议或通话
+- 联系人信息
+- 预算讨论
+- 跟进事项
+- 任何业务互动
 
-```bash
-# 1. Clone to your skills directory
-# Claude: ~/.claude/skills/
-# opencode: ~/.agents/skills/
-git clone <repo-url> <your-skills-dir>/solocrm
+当用户要求以下操作时也激活：
+- 查询客户信息
+- 查看互动历史
+- 导出数据给其他 skill 或 Excel
 
-# 2. Install dependencies
-cd <your-skills-dir>/solocrm
-npm install
+## 核心原则
 
-# 3. Verify installation
-node solo.js --version
-```
+**记录事实，不记录判断。** 只记录发生了什么，不记录意味着什么。
 
-**Installation is complete when** `node solo.js --version` returns a version number.
+- ✅ "讨论了30万预算"（事实）
+- ✅ "客户说下周给答复"（事实）
+- ❌ "这个客户很有意向"（判断）
+- ❌ "成交概率70%"（判断）
 
-## When to Use
-
-Activate when user provides business information:
-- Customer meetings or calls
-- Contact information
-- Budget discussions
-- Follow-up items
-- Any business interaction
-
-Also use when user asks to:
-- Query customer information
-- View interaction history
-- Export data for other skills or Excel
-
-## Core Principle
-
-**Store facts, not judgments.** Record what happened, not what it means.
-
-- ✅ "讨论了30万预算" (fact)
-- ✅ "客户说下周给答复" (fact)
-- ❌ "这个客户很有意向" (judgment)
-- ❌ "成交概率70%" (judgment)
-
-## Data Model
+## 数据模型
 
 ```
-Customer (organization)
-  └── Person (individual contact)
-       └── Event (what happened)
+Customer（客户/组织）
+  └── Person（联系人）
+       └── Event（事件/互动）
             - channel: call, meeting, email, wechat, visit
             - action: note, request, decision, commitment
-            - content: description
-            - amount: money mentioned
+            - content: 事件描述
+            - amount: 涉及金额
+            - amount_type: 金额类型
 ```
 
-## CLI Reference
+## CLI 命令参考
 
-### Recording Facts
+### 记录事实
 
 ```bash
-# Step 1: Ensure customer exists (idempotent)
+# 步骤1：确保客户存在（幂等）
 node solo.js customer ensure --name "腾讯"
-# Returns: {"id": "cust_xxx", "name": "腾讯"}
+# 返回：{"id": "cust_xxx", "name": "腾讯"}
 
-# Step 2: Ensure person exists (idempotent)
+# 步骤2：确保联系人存在（幂等）
 node solo.js person ensure --customer cust_xxx --name "张三" --title "产品总监"
-# Returns: {"id": "pers_xxx", "name": "张三"}
+# 返回：{"id": "pers_xxx", "name": "张三"}
 
-# Step 3: Record event
+# 步骤3：记录事件
 node solo.js event add \
   --customer cust_xxx \
   --person pers_xxx \
   --channel meeting \
   --event-action note \
   --content "讨论预算30万，下周给答复" \
-  --amount 300000
-# Returns: {"id": "evt_xxx"}
+  --amount 300000 \
+  --amount-type budget
+# 返回：{"id": "evt_xxx"}
 ```
 
-### Deleting Facts (Soft Delete)
+### 删除事实（软删除）
 
 ```bash
-# Delete customer (cascades to persons and events)
+# 删除客户（级联删除联系人和事件）
 node solo.js customer delete cust_xxx
 
-# Delete person
+# 删除联系人
 node solo.js person delete pers_xxx
 
-# Delete event
+# 删除事件
 node solo.js event delete evt_xxx
 ```
 
-### Restoring Facts
+### 恢复事实
 
 ```bash
-# Restore soft-deleted customer
+# 恢复软删除的客户
 node solo.js customer restore cust_xxx
 
-# Restore soft-deleted person
+# 恢复软删除的联系人
 node solo.js person restore pers_xxx
 
-# Restore soft-deleted event
+# 恢复软删除的事件
 node solo.js event restore evt_xxx
 ```
 
-**Note**: Deleted records are hidden from queries but preserved in database for audit.
+**注意**：已删除的记录在查询中隐藏，但保留在数据库中用于审计。
 
-### Querying Facts
+### 查询事实
 
 ```bash
-# Get customer info
+# 获取客户信息
 node solo.js customer get cust_xxx
 
-# List all customers
+# 列出所有客户
 node solo.js customer list
 
-# Get timeline
+# 获取时间线
 node solo.js timeline get cust_xxx --days 30
 
-# List events
+# 列出事件
 node solo.js event list --customer cust_xxx --limit 10
 
-# Search events by keyword
+# 按关键词搜索事件
 node solo.js search "预算"
 node solo.js search "腾讯" --channel meeting
 node solo.js search "报价" --range 30d --format md
 ```
 
-### Exporting Data
+### 导出数据
 
 ```bash
-# Export customer summary (Markdown for reading)
+# 导出客户摘要（Markdown 供阅读）
 node solo.js export customer --id cust_xxx --format md
 
-# Export timeline (Markdown for reading)
+# 导出时间线（Markdown 供阅读）
 node solo.js export timeline --customer cust_xxx --format md --days 90
 
-# Export events (NDJSON for AI pipelines)
+# 导出事件（NDJSON 供 AI 管道）
 node solo.js export events --customer cust_xxx --format ndjson
 
-# Export events (CSV for Excel)
+# 导出事件（CSV 供 Excel）
 node solo.js export events --customer cust_xxx --format csv
 
-# Export all customers (CSV for Excel)
+# 导出所有客户（CSV 供 Excel）
 node solo.js export customers --format csv
 
-# Export all persons (CSV for Excel)
+# 导出所有联系人（CSV 供 Excel）
 node solo.js export persons --format csv
 
-# Full backup (JSON for migration)
+# 完整备份（JSON 用于迁移）
 node solo.js export backup --format json
 ```
 
-### Export Filters
+### 导入命令
 
 ```bash
-# Time range: 7d, 30d, 90d, 1y
-node solo.js export events --range 30d --format csv
-
-# By channel
-node solo.js export events --channel meeting --format csv
-
-# Combined
-node solo.js export events --customer cust_xxx --channel meeting --range 7d --format csv
-```
-
-### Import Commands
-
-```bash
-# Import from backup file (for data merging between users)
+# 从备份文件导入（用于用户间合并数据）
 node solo.js import <file.json>
 
-# Workflow: User A exports, User B imports
-# User A:
+# 工作流：用户A导出，用户B导入
+# 用户A：
 node solo.js export backup --format json > a_data.json
-# User B:
+# 用户B：
 node solo.js import a_data.json
 ```
 
-**Import Behavior:**
-- Customers: idempotent by name (existing customers skipped)
-- Persons: idempotent by customer+name (existing contacts skipped)
-- Events: always creates new (events are timestamped records)
+**导入行为：**
+- 客户：按名称幂等（已有客户跳过）
+- 联系人：按客户+手机或邮箱幂等（已有联系人跳过）
+- 事件：始终创建新记录（事件是带时间戳的记录）
 
-## Extraction Rules
+## 提取规则
 
-When parsing user input, extract:
+解析用户输入时，提取：
 
-1. **Customer**: Company names (腾讯, 阿里, 字节, 华为)
-2. **Person**: Names with context (张三, 李总, 王经理)
-3. **Channel**: How interaction happened (开会/会议=meeting, 电话=call, 微信=wechat, 邮件=email)
-4. **Action**: Event type (讨论=note, 决定=decision, 承诺=commitment, 报价=request)
-5. **Content**: Natural language description of what happened
-6. **Amount**: Numbers with monetary context (30万=300000, 15k=15000)
-7. **Amount Type**: Classify amount meaning using recommended values:
-   - `contract` - 合同金额 (签了50万合同)
-   - `payment_in` - 收款 (收到30万回款)
-   - `payment_out` - 付款 (付了10万给供应商)
-   - `budget` - 预算 (他们预算200万)
-   - `quote` - 报价 (报价15万)
-   - `deposit` - 定金/预付 (付了10万定金)
-   - `mentioned` - 泛指 (默认，无法明确归类时使用)
-8. **Time**: When it happened (昨天=yesterday, 上周=last week)
+1. **客户**：公司名称（腾讯、阿里、字节、华为）
+2. **联系人**：带上下文的姓名（张三、李总、王经理）
+3. **渠道**：互动方式（开会/会议=meeting，电话=call，微信=wechat，邮件=email）
+4. **动作**：事件类型（讨论=note，决定=decision，承诺=commitment，报价=request）
+5. **内容**：事件的自然语言描述
+6. **金额**：带金钱上下文的数字（30万=300000，15k=15000）
+7. **金额类型**：分类金额含义：
+   - `contract` - 合同金额（签了50万合同）
+   - `payment_in` - 收款（收到30万回款）
+   - `payment_out` - 付款（付了10万给供应商）
+   - `budget` - 预算（他们预算200万）
+   - `quote` - 报价（报价15万）
+   - `deposit` - 定金/预付（付了10万定金）
+   - `mentioned` - 泛指（默认，无法明确归类时使用）
+8. **时间**：发生时间（昨天=yesterday，上周=last week）
 
-## Examples
+## 示例
 
-### Input → Commands
+### 输入 → 命令
 
-**User**: "昨天跟腾讯张三开会，他说预算30万，下周给答复"
+**用户**："昨天跟腾讯张三开会，他说预算30万，下周给答复"
 
-**AI executes**:
+**AI 执行**：
 ```bash
 node solo.js customer ensure --name "腾讯"
 node solo.js person ensure --customer cust_xxx --name "张三"
@@ -227,11 +196,11 @@ node solo.js event add \
   --occurred-at "2025-01-14T00:00:00Z"
 ```
 
-**User**: "给李总发了报价邮件，15万"
+**用户**："给李总发了报价邮件，15万"
 
-**AI executes**:
+**AI 执行**：
 ```bash
-node solo.js customer ensure --name "当前客户"  # or from context
+node solo.js customer ensure --name "当前客户"  # 或从上下文获取
 node solo.js person ensure --customer cust_xxx --name "李总"
 node solo.js event add \
   --customer cust_xxx \
@@ -243,115 +212,108 @@ node solo.js event add \
   --amount-type quote
 ```
 
-**User**: "导出腾讯最近一个月的会议记录，我要用 Excel 看"
+## 触发规则
 
-**AI executes**:
-```bash
-node solo.js export events --customer cust_xxx --channel meeting --range 30d --format csv > tencent_meetings.csv
-```
+### 自动使用
 
-## Trigger Rules
-
-### Auto-Use (自动使用)
-
-When user mentions these, use SoloCRM directly:
+当用户提到以下关键词时，直接使用 SoloCRM：
 - 客户、联系人、跟进、会议、合同、报价、拜访
-- Customer, contact, follow-up, meeting, contract, quote, visit
 
-### Extended Use Cases (扩展用法 - Refer to Documentation)
+### 扩展用法（需查阅参考文档）
 
-When user mentions these keywords, first read the corresponding reference document:
+当用户提到以下关键词时，先读取对应的参考文档：
 
-| Keywords | Reference Document |
-|----------|-------------------|
+| 关键词 | 参考文档 |
+|--------|----------|
 | 礼金、随礼、份子钱、红包、婚礼、满月 | [references/social-gifts.md](references/social-gifts.md) |
 | 旅行、旅游、出差、费用、记账、花了多少 | [references/travel-expense.md](references/travel-expense.md) |
+| 进货、出货、库存、商品、入库、出库 | [references/lightweight-inventory.md](references/lightweight-inventory.md) |
+| 日记、日志、记录、今天、日常 | [references/daily-records.md](references/daily-records.md) |
 
-## Multi-Profile Support
+## 多数据库支持
 
-SoloCRM supports multiple databases via profiles for separating different data contexts (e.g., work vs personal).
+SoloCRM 支持通过 profile 使用多个数据库（如工作数据和个人数据分离）。
 
-### Profile Management
+### Profile 管理
 
 ```bash
-# Add a profile
+# 添加 profile
 node solo.js config add-profile "work" --path "~/.solocrm/work.db"
 
-# Add a profile with Chinese name
+# 添加中文名 profile
 node solo.js config add-profile "我的人情来往" --path "~/Dropbox/solocrm/social.db"
 
-# List all profiles
+# 列出所有 profile
 node solo.js config list-profiles
 
-# Remove a profile
+# 删除 profile
 node solo.js config remove-profile "work"
 ```
 
-### Using Profiles
+### 使用 Profile
 
 ```bash
-# Use a specific profile
+# 使用指定 profile
 node solo.js --profile "work" customer list
 node solo.js --profile "我的人情来往" event list --customer cust_xxx
 
-# Default (no profile specified)
+# 默认（不指定 profile）
 node solo.js customer list
 ```
 
-### AI Agent Behavior with Multiple Profiles
+### AI Agent 多数据库行为
 
-**When user context has a clear profile:**
-- Use it directly, no need to ask
+**当用户上下文有明确 profile 时：**
+- 直接使用，无需询问
 
-**When no profile is specified and multiple profiles exist:**
-- Ask user: "要记录到哪个数据库？"
-- List available profiles
+**当未指定 profile 且存在多个 profile 时：**
+- 询问用户："要记录到哪个数据库？"
+- 列出可用 profile
 
-**When writing, always confirm with user:**
-- Show which profile will be used
-- Let user confirm or switch
+**写入时，始终确认：**
+- 显示将使用的 profile
+- 让用户确认或切换
 
-### Example Conversation
+### 对话示例
 
 ```
-User: 记录一下，收到张三礼金600元
+用户：记录一下，收到张三礼金600元
 
-AI: 当前有多个数据库：
+AI：当前有多个数据库：
     1. work (工作数据)
     2. 我的人情来往 (个人社交)
     
     要记录到哪个数据库？
 
-User: 人情来往
+用户：人情来往
 
-AI: [我的人情来往] 已记录收到张三礼金600元
+AI：[我的人情来往] 已记录收到张三礼金600元
 ```
 
-## What NOT to Record
+## 不记录的内容
 
-- Customer "等级" or "阶段" (let AI infer from facts)
-- Win probability (judgment, not fact)
-- Risk scores (judgment, not fact)
-- Tasks or follow-ups (use task manager)
+- 客户"等级"或"阶段"（让 AI 从事实推断）
+- 成交概率（判断，不是事实）
+- 风险评分（判断，不是事实）
+- 任务或跟进（使用任务管理器）
 
-## Data Location
+## 数据库位置
 
-SQLite database stored at: `~/.solocrm/data.db`
+SQLite 数据库存储在：`~/.solocrm/data.db`
 
-## Requirements
+## 环境要求
 
 - Node.js >= 18.0.0
 
-## Error Handling
+## 错误处理
 
-If command fails, check:
-1. Customer/Person ID exists (use `ensure` to create)
-2. Required options are provided
-3. File paths are valid for export
+如果命令失败，检查：
+1. 客户/联系人 ID 是否存在（使用 `ensure` 创建）
+2. 是否提供了必需选项
+3. 导出文件路径是否有效
 
-## Limitations (v0.1)
+## 限制（v0.1）
 
-- No multi-agent support
-- No soft delete
-- No import from CSV (use CLI to record)
-- No profile-based export (planned for v0.2)
+- 不支持多 agent
+- 不支持 CSV 导入（使用 CLI 记录）
+- 不支持基于 profile 的导出（计划在 v0.2 实现）
