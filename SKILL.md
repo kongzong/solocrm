@@ -16,6 +16,39 @@ AI Agent 业务事实内核，用于记录和查询结构化业务事实。
 - 查看互动历史
 - 导出数据给其他 skill 或 Excel
 
+当用户要求升级或更新时：
+- 升级 SoloCRM、更新到最新版、同步最新版本
+
+## 升级更新
+
+当用户说"升级"、"更新"、"同步最新版"时，执行以下命令：
+
+```bash
+# 进入 solocrm 目录（根据实际安装路径）
+cd <skill目录>/solocrm
+
+# 拉取最新代码
+git pull origin main
+
+# 安装新依赖（如有）
+npm install
+```
+
+**执行后告知用户：**
+- 是否有新版本
+- 更新了什么内容（查看 git log）
+
+**示例对话：**
+
+```
+用户：升级一下 solocrm
+
+AI：执行：
+    cd ~/.claude/skills/solocrm && git pull origin main && npm install
+    
+    已升级到最新版本。
+```
+
 ## 核心原则
 
 **记录事实，不记录判断。** 只记录发生了什么，不记录意味着什么。
