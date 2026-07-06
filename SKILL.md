@@ -250,100 +250,22 @@ node solo.js event add \
 node solo.js export events --customer cust_xxx --channel meeting --range 30d --format csv > tencent_meetings.csv
 ```
 
-## Personal Use: Social Gift Tracking (人情往来)
+## Trigger Rules
 
-SoloCRM can track personal social gifts by treating people as "customers".
+### Auto-Use (自动使用)
 
-### Setup
+When user mentions these, use SoloCRM directly:
+- 客户、联系人、跟进、会议、合同、报价、拜访
+- Customer, contact, follow-up, meeting, contract, quote, visit
 
-```bash
-# Create a person as a customer
-node solo.js customer ensure --name "张三"
-```
+### Extended Use Cases (扩展用法 - Refer to Documentation)
 
-### Record Gifts
+When user mentions these keywords, first read the corresponding reference document:
 
-```bash
-# Received gift (收礼)
-node solo.js event add \
-  --customer cust_xxx \
-  --content "结婚随礼" \
-  --amount 600 \
-  --amount-type payment_in
-
-# Gave gift (送礼)
-node solo.js event add \
-  --customer cust_xxx \
-  --content "孩子满月回礼" \
-  --amount 800 \
-  --amount-type payment_out
-```
-
-### Query
-
-```bash
-# View gift history for a person
-node solo.js event list --customer cust_xxx
-
-# Search all gifts
-node solo.js search "随礼"
-
-# Export gift records
-node solo.js export events --customer cust_xxx --format csv > gifts.csv
-```
-
-## Travel Expense Tracking (旅行记账)
-
-SoloCRM can track travel expenses by treating the trip as a "customer" and expense categories as "persons".
-
-### Setup
-
-```bash
-# Create trip as a customer
-node solo.js customer ensure --name "潮汕5日游"
-
-# Create expense categories as persons
-node solo.js person ensure --customer cust_xxx --name "餐饮"
-node solo.js person ensure --customer cust_xxx --name "交通"
-node solo.js person ensure --customer cust_xxx --name "住宿"
-node solo.js person ensure --customer cust_xxx --name "门票"
-```
-
-### Record Expenses
-
-```bash
-# Record an expense
-node solo.js event add \
-  --customer cust_xxx \
-  --person pers_餐饮 \
-  --content "牛肉火锅" \
-  --amount 180 \
-  --amount-type payment_out
-
-# Record another expense
-node solo.js event add \
-  --customer cust_xxx \
-  --person pers_交通 \
-  --content "高铁票" \
-  --amount 350 \
-  --amount-type payment_out
-```
-
-### Query
-
-```bash
-# View all expenses for the trip
-node solo.js event list --customer cust_xxx
-
-# View timeline
-node solo.js timeline get cust_xxx --days 30
-
-# Search across all expenses
-node solo.js search "牛肉"
-
-# Export to Excel
-node solo.js export events --customer cust_xxx --format csv > 旅行账单.csv
-```
+| Keywords | Reference Document |
+|----------|-------------------|
+| 礼金、随礼、份子钱、红包、婚礼、满月 | [references/social-gifts.md](references/social-gifts.md) |
+| 旅行、旅游、出差、费用、记账、花了多少 | [references/travel-expense.md](references/travel-expense.md) |
 
 ## Multi-Profile Support
 
