@@ -375,4 +375,4 @@ SQLite 数据库存储在：`~/.solocrm/data.db`
 
 - 不支持多 agent
 - 不支持 CSV 导入（使用 CLI 记录）
-- 不支持基于 profile 的导出（计划在 v0.2 实现）
+
