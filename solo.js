@@ -297,10 +297,11 @@ eventCmd
   .description('List events for a customer')
   .requiredOption('--customer <id>', 'Customer ID')
   .option('--limit <n>', 'Max results', parseDateInt, 50)
+  .option('--days <n>', 'Filter by days (e.g., 7, 30, 90)', parseDateInt)
   .action((opts) => {
     const db = getDb();
     try {
-      const events = db.eventList(opts.customer, opts.limit);
+      const events = db.eventList(opts.customer, opts.limit, opts.days);
       console.log(JSON.stringify(events, null, 2));
     } finally {
       db.close();

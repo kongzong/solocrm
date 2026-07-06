@@ -261,10 +261,20 @@ class DB {
     };
   }
 
-  eventList(customerId, limit = 50) {
-    return this.db.prepare(
-      'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? AND deleted_at IS NULL ORDER BY occurred_at DESC LIMIT ?'
-    ).all(customerId, limit);
+  eventList(customerId, limit = 50, days = null) {
+    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? AND deleted_at IS NULL';
+    const params = [customerId];
+
+    if (days) {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      sql += ' AND occurred_at >= ?';
+      params.push(cutoff);
+    }
+
+    sql += ' ORDER BY occurred_at DESC LIMIT ?';
+    params.push(limit);
+
+    return this.db.prepare(sql).all(...params);
   }
 
   eventDelete(id) {
