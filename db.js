@@ -262,7 +262,7 @@ class DB {
   }
 
   eventList(customerId, limit = 50, days = null) {
-    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? AND deleted_at IS NULL';
+    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, amount_type, occurred_at, recorded_at, meta FROM event WHERE customer_id = ? AND deleted_at IS NULL';
     const params = [customerId];
 
     if (days) {
@@ -287,7 +287,7 @@ class DB {
     let sql = `
       SELECT 
         e.id, e.customer_id, e.person_id, e.channel, e.action, 
-        e.content, e.amount, e.currency, e.occurred_at, e.recorded_at,
+        e.content, e.amount, e.currency, e.amount_type, e.occurred_at, e.recorded_at,
         c.name as customer_name,
         p.name as person_name
       FROM event e
@@ -342,7 +342,7 @@ class DB {
     return this.db.prepare(`
       SELECT 
         e.id, e.customer_id, e.person_id, e.channel, e.action, 
-        e.content, e.amount, e.currency, e.occurred_at, e.recorded_at, e.meta,
+        e.content, e.amount, e.currency, e.amount_type, e.occurred_at, e.recorded_at, e.meta,
         c.name as customer_name,
         p.name as person_name
       FROM event e
@@ -362,7 +362,7 @@ class DB {
   }
 
   eventListAll(options = {}) {
-    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, occurred_at, recorded_at, meta FROM event WHERE deleted_at IS NULL';
+    let sql = 'SELECT id, customer_id, person_id, channel, action, content, amount, currency, amount_type, occurred_at, recorded_at, meta FROM event WHERE deleted_at IS NULL';
     const conditions = [];
     const params = [];
 
@@ -400,7 +400,7 @@ class DB {
     let sql = `
       SELECT 
         e.id, e.customer_id, e.person_id, e.channel, e.action, 
-        e.content, e.amount, e.currency, e.occurred_at, e.recorded_at, e.meta,
+        e.content, e.amount, e.currency, e.amount_type, e.occurred_at, e.recorded_at, e.meta,
         c.name as customer_name,
         p.name as person_name
       FROM event e
